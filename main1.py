@@ -36,6 +36,61 @@ for row in range(1, row_nubmer):
     else:
         logg_date[row - 1] = list(xlrd.xldate_as_tuple(logg_date[row - 1], exel_data_file.datemode))
 
+
+#Процедура поиска графиков на заданном отрезке и их нормализация
+#sp - start point
+#ep - end point
+#qu - quantity of points - колиичетсво точек до которого мы нормализуем каждый график
+def graphic_normalization(sp, ep, length):
+    X = []
+    Curr = []
+    Volt = []
+    k = []
+
+    for point in range(sp, ep):
+        I1 = logg_current[point]
+        I2 = logg_current[point + 1]
+        # Находим точку начала зарядки по значению и производной от тока
+        if I2 > 600 and I2 - I1 > 20:
+            print("Начало: " + str(logg_date[point][3]) + ":" + str(logg_date[point][4]))
+            for end_point in range(point, ep - 1):
+                X.append(logg_date[end_point])
+                Curr.append(logg_current[end_point])
+                Volt.append(logg_voltage[end_point])
+                k.append(end_point)
+
+                I1 = logg_current[end_point]
+                I2 = logg_current[end_point + 1]
+                U1 = logg_current[end_point]
+                U2 = logg_current[end_point + 1]
+
+                if I2 < 600 and U2 - U1 < -30:
+                    print("Конец: " + str(logg_date[end_point][3]) + ":" + str(logg_date[end_point][4]))
+                    break
+    normalization(k, Curr, Volt, 256)
+
+
+def normalization(x, y, y2, length):
+    m = len(x) // length
+    if (len(x) > length) and (m > 1):
+        i = 0
+        while i < m-1:
+            Curr_average = []
+            Volt_average = []
+            average_k = []
+            print(123)
+            for point in range(0, len(x)//2):
+                Curr_average.append((y[2*point]+y[2*point+1])/2)
+                Volt_average.append((y2[2*point]+y2[2*point+1])/2)
+                average_k.append(point)
+            i=i+1
+            for point in range(0, len(average_k)):
+                if len(average_k)-length % point = 0
+    print(len(Curr_average))
+
+graphic_normalization(1, 1300, 1)
+
+'''
 X = []
 Y = []
 k = []
@@ -100,4 +155,4 @@ axes[0].set_title('График как он есть')
 axes[1].set_title('Каждая вторая точка')
 axes[2].set_title('Среднее значение между двумя соседними')
 #Открыть окно с графиками
-plt.show()
+plt.show()'''
