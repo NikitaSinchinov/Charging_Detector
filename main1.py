@@ -1,6 +1,6 @@
 #Программа чтения и обработки данных с логгера
 #Синчинов Никита
-
+from typing import List
 
 import xlrd
 import matplotlib.pyplot as plt
@@ -37,27 +37,83 @@ for row in range(1, row_nubmer):
         logg_date[row - 1] = list(xlrd.xldate_as_tuple(logg_date[row - 1], exel_data_file.datemode))
 
 
+#y_curr - набор значений тока от времени
+#y_voltage - набор значений напряжения от времени
+#length - длина (колво точек) к которому необхожимо нормализовать (привести)
+#На выходе процедуры нормализованный набор точек без потери и изменения характера графика
+def normalization(y_curr, y_voltage, length):
+    #Так как длина вектора значний тока и напряжения одинакова, отталкиваемся от тока (y_curr), например
+    if len(y_curr) > length:
+        while len(y_curr) > length:
+            norm_y_curr = []
+            norm_y_voltage = []
+            m = len(y_curr) // length
+            for point in range(0, len(y_curr)-m, m):
+                aver = 0
+                aver2 = 0
+                for subpoint in range(0, m):
+                    aver = aver + y_curr[point + subpoint]
+                    aver2 = aver2 + y_voltage[point + subpoint]
+                norm_y_curr.append(aver / m)
+                norm_y_voltage.append(aver2 / m)
+            y_curr = norm_y_curr
+            y_voltage = norm_y_voltage
+    elif len(y_curr) < length:
+        iter = 0
+        while len(y_curr) < length:
+            mayak = len(y_curr)
+            #Добавляем по одному значению в вектор, пока он не будет желаемой длины
+            #За первую итерацию между 1 и 2 значением, за вторую между 2 и 3 и т.д
+            #Добавляем среднее между двумя соседними
+            norm_y_curr = [0] * (len(y_curr) + 1)
+            y1_curr = y_curr[iter]
+            y2_curr = y_curr[iter + 1]
+            norm_y_curr[iter] = y1_curr
+            norm_y_curr[iter+1] = (y1_curr + y2_curr)/2
+            norm_y_curr[:iter] = y_curr[:iter]
+            norm_y_curr[iter+2:] = y_curr[iter+1:]
+            y_curr = norm_y_curr
+
+            norm_y_voltage = [0] * (len(y_voltage) + 1)
+            y1_voltage = y_voltage[iter]
+            y2_voltage = y_voltage[iter + 1]
+            norm_y_voltage[iter] = y1_voltage
+            norm_y_voltage[iter + 1] = (y1_voltage + y2_voltage) / 2
+            norm_y_voltage[:iter] = y_voltage[:iter]
+            norm_y_voltage[iter + 2:] = y_voltage[iter + 1:]
+            y_voltage = norm_y_voltage
+
+            iter += 2
+            #Когда дошли до последнего элемента, обнуляем счетчик и начинаем снова
+            if iter >= mayak:
+                iter = 0
+                mayak = len(y_curr)
+    return [y_curr, y_voltage]
+
+
 #Процедура поиска графиков на заданном отрезке и их нормализация
 #sp - start point
 #ep - end point
 #qu - quantity of points - колиичетсво точек до которого мы нормализуем каждый график
-def graphic_normalization(sp, ep, length):
-    X = []
-    Curr = []
-    Volt = []
-    k = []
-
+def graphic_normalization(sp, ep, qu):
+    #На выходе в этот массив запишутся все найденные и нормализованные данные зарядок
+    mass = []
     for point in range(sp, ep):
+        X = []
+        Curr = []
+        Volt = []
         I1 = logg_current[point]
         I2 = logg_current[point + 1]
         # Находим точку начала зарядки по значению и производной от тока
         if I2 > 600 and I2 - I1 > 20:
+            print("___________________________")
             print("Начало: " + str(logg_date[point][3]) + ":" + str(logg_date[point][4]))
             for end_point in range(point, ep - 1):
+                #Вектор X содержит массив данных времени для каждой зарядки (пока не используется)
                 X.append(logg_date[end_point])
+
                 Curr.append(logg_current[end_point])
                 Volt.append(logg_voltage[end_point])
-                k.append(end_point)
 
                 I1 = logg_current[end_point]
                 I2 = logg_current[end_point + 1]
@@ -66,93 +122,28 @@ def graphic_normalization(sp, ep, length):
 
                 if I2 < 600 and U2 - U1 < -30:
                     print("Конец: " + str(logg_date[end_point][3]) + ":" + str(logg_date[end_point][4]))
+                    print("___________________________")
                     break
-    normalization(k, Curr, Volt, 256)
+            #Добавляем в конец массива нормализованные данные тока и напряжения от новой найденной зарядки
+            mass.append(normalization(Curr, Volt, qu))
+    return mass
 
+Q_points = 1000
+a = graphic_normalization(0, 2800, Q_points)
 
-def normalization(x, y, y2, length):
-    m = len(x) // length
-    if (len(x) > length) and (m > 1):
-        i = 0
-        while i < m-1:
-            Curr_average = []
-            Volt_average = []
-            average_k = []
-            print(123)
-            for point in range(0, len(x)//2):
-                Curr_average.append((y[2*point]+y[2*point+1])/2)
-                Volt_average.append((y2[2*point]+y2[2*point+1])/2)
-                average_k.append(point)
-            i=i+1
-            for point in range(0, len(average_k)):
-                if len(average_k)-length % point = 0
-    print(len(Curr_average))
+x = []
+for i in range(0, Q_points):
+    x.append(i)
 
-graphic_normalization(1, 1300, 1)
-
-'''
-X = []
-Y = []
-k = []
-Y2 = []
-# Поиск пар точек
-for point in range(0, 1300): #len(logg_date)-1
-    I1 = logg_current[point]
-    I2 = logg_current[point+1]
-    # Находим точку начала зарядки по значению и производной от тока
-    if I2 > 600 and I2-I1>20:
-        print("")
-        print("Начало: " + str(logg_date[point][3]) + ":"+ str(logg_date[point][4]))
-        # Начинаем искать точку окончания зарядки
-        for end_point in range(point, len(logg_date)-1):
-            X.append(logg_date[end_point])
-            Y.append(logg_current[end_point])
-            Y2.append(logg_voltage[end_point])
-            k.append(end_point)
-            I1 = logg_current[end_point]
-            I2 = logg_current[end_point + 1]
-            U1 = logg_current[end_point]
-            U2 = logg_current[end_point + 1]
-            if I2 < 600 and U2 - U1 < -30:
-                print("Конец: " + str(logg_date[end_point][3]) + ":" + str(logg_date[end_point][4]))
-                break
-print("График состоит из ", len(X), " наборов.")
-
-mY = []
-mY2 = []
-mk = []
-for point in range(0, len(Y)//2-1):
-    mY.append(Y[point*2])
-    mY2.append(Y2[point*2])
-    mk.append(point)
-
-
-average_Y = []
-average_Y2 = []
-average_k = []
-for point in range(0, len(Y)//2-2):
-    average_Y.append((Y[point*2] + Y[point*2+1])/2)
-    average_Y2.append((Y2[point*2] + Y2[point*2+1])/2)
-    average_k.append(point)
-
-
-
-
-
-#Настройки окна с графиками
-fig, axes = plt.subplots(nrows=3, ncols=1, figsize=(8, 8))
+#Блок вывода графиков
+fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(8, 8))
 fig.subplots_adjust(left=0.09, bottom=0.11, right=0.95, top=0.95, hspace=0.3)
 axes[0].grid(True)
 axes[1].grid(True)
-axes[2].grid(True)
-axes[0].plot(k, Y2, k, Y)
-axes[1].plot(mk, mY2, mk, mY)
-axes[2].plot(average_k, average_Y2, average_k, average_Y)
-axes[0].legend(('Напряжение', 'Ток'))
+axes[0].plot(x, a[0][0], x, a[1][0], x, a[2][0], x, a[3][0])
+axes[1].plot(x, a[0][1], x, a[1][1], x, a[2][1], x, a[3][1])
 
-
-axes[0].set_title('График как он есть')
-axes[1].set_title('Каждая вторая точка')
-axes[2].set_title('Среднее значение между двумя соседними')
+axes[0].set_title('Токи')
+axes[1].set_title('Напряжения')
 #Открыть окно с графиками
-plt.show()'''
+plt.show()
