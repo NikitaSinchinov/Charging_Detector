@@ -6,7 +6,7 @@ import xlrd
 import matplotlib.pyplot as plt
 
 
-exel_data_file = xlrd.open_workbook('test_data.xlsx')
+exel_data_file = xlrd.open_workbook('test_data_2.xlsx')
 sheet = exel_data_file.sheet_by_index(0)
 
 row_nubmer = sheet.nrows
@@ -128,8 +128,8 @@ def graphic_normalization(sp, ep, qu):
             mass.append(normalization(Curr, Volt, qu))
     return mass
 
-Q_points = 1000
-a = graphic_normalization(0, 2800, Q_points)
+Q_points = 100
+a = graphic_normalization(0, 1380, Q_points)
 
 x = []
 for i in range(0, Q_points):
@@ -140,10 +140,13 @@ fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(8, 8))
 fig.subplots_adjust(left=0.09, bottom=0.11, right=0.95, top=0.95, hspace=0.3)
 axes[0].grid(True)
 axes[1].grid(True)
-axes[0].plot(x, a[0][0], x, a[1][0], x, a[2][0], x, a[3][0])
-axes[1].plot(x, a[0][1], x, a[1][1], x, a[2][1], x, a[3][1])
+
+for num_graph in range(0, len(a[:])):
+    axes[0].plot(x, a[num_graph][0])
+    axes[1].plot(x, a[num_graph][1])
 
 axes[0].set_title('Токи')
 axes[1].set_title('Напряжения')
 #Открыть окно с графиками
+
 plt.show()
