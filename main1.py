@@ -6,16 +6,16 @@ import xlrd
 import matplotlib.pyplot as plt
 
 
-exel_data_file = xlrd.open_workbook('test_data_2.xlsx')
+exel_data_file = xlrd.open_workbook('log_data_26.xlsx')
 sheet = exel_data_file.sheet_by_index(0)
 
 row_nubmer = sheet.nrows
 cols_number = sheet.ncols
 
 #Номера столбцов напряжение тока и Времени
-voltage_col = 0
-current_col = 1
-date_col = 3
+voltage_col = 4
+current_col = 5
+date_col = 7
 
 logg_date = []
 logg_voltage = []
@@ -96,6 +96,7 @@ def normalization(y_curr, y_voltage, length):
 #ep - end point
 #qu - quantity of points - колиичетсво точек до которого мы нормализуем каждый график
 def graphic_normalization(sp, ep, qu):
+    counter2 = 0
     #На выходе в этот массив запишутся все найденные и нормализованные данные зарядок
     mass = []
     for point in range(sp, ep):
@@ -105,9 +106,11 @@ def graphic_normalization(sp, ep, qu):
         I1 = logg_current[point]
         I2 = logg_current[point + 1]
         # Находим точку начала зарядки по значению и производной от тока
-        if I2 > 600 and I2 - I1 > 20:
+        if I2 > 503 and '''I2 - I1 > 20''':
+            counter = 0
             print("___________________________")
-            print("Начало: " + str(logg_date[point][3]) + ":" + str(logg_date[point][4]))
+            #print("Начало: " + str(logg_date[point][3]) + ":" + str(logg_date[point][4]))
+            print("Начало: " + str(logg_date[point][:]) + ":" + str(logg_date[point][:]))
             for end_point in range(point, ep - 1):
                 #Вектор X содержит массив данных времени для каждой зарядки (пока не используется)
                 X.append(logg_date[end_point])
@@ -119,17 +122,21 @@ def graphic_normalization(sp, ep, qu):
                 I2 = logg_current[end_point + 1]
                 U1 = logg_current[end_point]
                 U2 = logg_current[end_point + 1]
-
-                if I2 < 600 and U2 - U1 < -30:
-                    print("Конец: " + str(logg_date[end_point][3]) + ":" + str(logg_date[end_point][4]))
+                counter += 1
+                if I2 < 519 and '''U2 - U1 < -30''':
+                    #print("Конец: " + str(logg_date[end_point][3]) + ":" + str(logg_date[end_point][4]))
+                    print("Конец: " + str(logg_date[end_point][:]) + ":" + str(logg_date[end_point][:]))
                     print("___________________________")
                     break
             #Добавляем в конец массива нормализованные данные тока и напряжения от новой найденной зарядки
-            mass.append(normalization(Curr, Volt, qu))
+            if counter >= 30:
+                counter2 += 1
+                mass.append(normalization(Curr, Volt, qu))
+    print(counter2)
     return mass
 
-Q_points = 100
-a = graphic_normalization(0, 1380, Q_points)
+Q_points = 200
+a = graphic_normalization(13800, 18000, Q_points)
 
 x = []
 for i in range(0, Q_points):
