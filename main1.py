@@ -4,7 +4,7 @@ from typing import List
 
 import xlrd
 import matplotlib.pyplot as plt
-
+import mplcursors
 
 exel_data_file = xlrd.open_workbook('log_data_26.xlsx')
 sheet = exel_data_file.sheet_by_index(0)
@@ -96,25 +96,25 @@ def normalization(y_curr, y_voltage, length):
 #ep - end point
 #qu - quantity of points - колиичетсво точек до которого мы нормализуем каждый график
 def graphic_normalization(sp, ep, qu):
-    counter2 = 0
-    #На выходе в этот массив запишутся все найденные и нормализованные данные зарядок
-    mass = []
-    for point in range(sp, ep):
+    mass = []  # На выходе в этот массив запишутся все найденные и нормализованные данные зарядок
+    counter_c = 0  #Счетчик зарядок
+    date_of = []  # В этом массиве хранятся дата и время каждой зарядки
+    for point in range(sp, ep - 1):
+
         X = []
         Curr = []
         Volt = []
         I1 = logg_current[point]
         I2 = logg_current[point + 1]
+
         # Находим точку начала зарядки по значению и производной от тока
-        if I2 > 503 and '''I2 - I1 > 20''':
-            counter = 0
+        if I2 > 600 and I2 - I1 > 20:
             print("___________________________")
-            #print("Начало: " + str(logg_date[point][3]) + ":" + str(logg_date[point][4]))
-            print("Начало: " + str(logg_date[point][:]) + ":" + str(logg_date[point][:]))
+            print("Начало: " + str(logg_date[point][:]))
+            counter_points = 0   #Счетчик точек
             for end_point in range(point, ep - 1):
                 #Вектор X содержит массив данных времени для каждой зарядки (пока не используется)
                 X.append(logg_date[end_point])
-
                 Curr.append(logg_current[end_point])
                 Volt.append(logg_voltage[end_point])
 
@@ -122,21 +122,25 @@ def graphic_normalization(sp, ep, qu):
                 I2 = logg_current[end_point + 1]
                 U1 = logg_current[end_point]
                 U2 = logg_current[end_point + 1]
-                counter += 1
-                if I2 < 519 and '''U2 - U1 < -30''':
-                    #print("Конец: " + str(logg_date[end_point][3]) + ":" + str(logg_date[end_point][4]))
-                    print("Конец: " + str(logg_date[end_point][:]) + ":" + str(logg_date[end_point][:]))
+                counter_points += 1
+                if I2 < 600 and U2 - U1 < -30:
+                    print("Конец: " + str(logg_date[end_point][:]))
                     print("___________________________")
+
+                    if counter_points > 30:
+                        #Добавляем в конец массива нормализованные данные тока и напряжения от новой найденной зарядки
+                        mass.append(normalization(Curr, Volt, qu))
+                        date_of.append([])
+                        date_of[counter_c].append(logg_date[point][:])
+                        date_of[counter_c].append(logg_date[end_point][:])
+                        counter_c += 1
                     break
-            #Добавляем в конец массива нормализованные данные тока и напряжения от новой найденной зарядки
-            if counter >= 30:
-                counter2 += 1
-                mass.append(normalization(Curr, Volt, qu))
-    print(counter2)
-    return mass
+    print("Найдено зарядок: ", counter_c)
+    print("")
+    return mass, date_of
 
 Q_points = 200
-a = graphic_normalization(13800, 18000, Q_points)
+a, date_s = graphic_normalization(13800, 50000, Q_points)
 
 x = []
 for i in range(0, Q_points):
@@ -149,11 +153,19 @@ axes[0].grid(True)
 axes[1].grid(True)
 
 for num_graph in range(0, len(a[:])):
-    axes[0].plot(x, a[num_graph][0])
-    axes[1].plot(x, a[num_graph][1])
+    lines = axes[0].plot(x, a[num_graph][0], gid=num_graph)
+    axes[1].plot(x, a[num_graph][1], gid=num_graph)
 
 axes[0].set_title('Токи')
 axes[1].set_title('Напряжения')
-#Открыть окно с графиками
 
+
+def find_time(event):
+    for curve in axes[0].get_lines():
+        if curve.contains(event)[0]:
+            print("Этому графику соответствует дата: ", date_s[curve.get_gid()])
+
+fig.canvas.mpl_connect("button_press_event", find_time)
+
+#Открыть окно с графиками
 plt.show()
